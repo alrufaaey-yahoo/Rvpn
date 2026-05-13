@@ -143,7 +143,7 @@ fun Project.setupCommon() {
             applicationVariants.forEach { variant ->
                 variant.outputs.forEach {
                     it as BaseVariantOutputImpl
-                    it.outoutputFileName = outputFileName.replace(
+                    it.outputFileName = it.outputFileName.replace(
                         "app", "alrufaaey-vpn-" + variant.versionName
                     ).replace("-release", "").replace("-foss", "")
                 }
