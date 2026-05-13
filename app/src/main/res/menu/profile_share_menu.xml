@@ -34,4 +34,11 @@
                 android:title="@string/action_export_clipboard" />
         </menu>
     </item>
+
+    <item
+        android:id="@+id/action_config_export_clipboard"
+        android:title="Export Config to Clipboard" />
+    <item
+        android:id="@+id/action_config_export_file"
+        android:title="Export Config to File" />
 </menu>

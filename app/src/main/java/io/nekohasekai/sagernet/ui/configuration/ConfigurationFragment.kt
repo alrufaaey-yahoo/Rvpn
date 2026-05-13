@@ -19,6 +19,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.content.ClipboardManager
 import android.content.ClipData
+import android.content.Context.CLIPBOARD_SERVICE
 import com.google.android.material.snackbar.Snackbar
 import android.widget.ImageView
 import android.widget.LinearLayout
