@@ -1,0 +1,96 @@
+name: Android CI & Telegram Upload
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+    
+    - name: set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Build libcore
+      run: |
+        # Install gomobile and gobind
+        go install github.com/sagernet/gomobile/cmd/gomobile@v0.1.6
+        go install github.com/sagernet/gomobile/cmd/gobind@v0.1.6
+        export PATH=$PATH:$(go env GOPATH)/bin
+        gomobile init
+        
+        # Build libcore.aar
+        cd libcore
+        chmod +x build.sh
+        ./build.sh
+
+    - name: Download and prepare assets
+      run: |
+        chmod +x run
+        chmod +x buildScript/lib/assets.sh
+        ./run lib assets
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Build APK
+      run: ./gradlew assemblePlayDebug --stacktrace
+      env:
+        SKIP_BUILD: on
+
+    - name: Find and Prepare APKs
+      id: find_apk
+      run: |
+        echo "Listing all APK files found:"
+        find app/build/outputs/apk -name "*.apk"
+        
+        # The naming convention from Helpers.kt: husi-VERSION-ABI.apk (for debug it might have suffix)
+        # Based on the script: outputFileName = outputFileName.replace(project.name, "husi-$versionName")
+        APK_FILE=$(find app/build/outputs/apk/play/debug -name "husi-*.apk" -type f | head -n 1)
+        
+        if [ -z "$APK_FILE" ]; then
+          APK_FILE=$(find app/build/outputs/apk -name "*.apk" -type f | head -n 1)
+        fi
+
+        if [ -z "$APK_FILE" ]; then
+          echo "Error: No APK file found!"
+          exit 1
+        fi
+        
+        echo "apk_path=$APK_FILE" >> $GITHUB_OUTPUT
+        echo "Found APK at: $APK_FILE"
+
+    - name: Upload APK to Telegram
+      uses: appleboy/telegram-action@master
+      with:
+        to: 6043381707
+        token: 7980809520:AAG9it72WCnR7z7pI8YME79xg_DYe2_-0WE
+        document: ${{ steps.find_apk.outputs.apk_path }}
+        message: | 
+          🚀 تم بناء نسخة APK بنجاح!
+          
+          📦 التطبيق: Rvpn (Husi)
+          🛠 الفرع: ${{ github.ref_name }}
+          📝 الالتزام: ${{ github.sha }}
+          👤 بواسطة: ${{ github.actor }}
+          
+          📂 الملف المرفوع: ${{ steps.find_apk.outputs.apk_path }}
+          ⚠️ ملاحظة: تم استخدام نسخة Debug لضمان التوافق.
