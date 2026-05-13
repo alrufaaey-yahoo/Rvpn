@@ -39,6 +39,7 @@ jobs:
         
         # Build libcore.aar
         cd libcore
+        go mod tidy
         chmod +x build.sh
         ./build.sh
 
